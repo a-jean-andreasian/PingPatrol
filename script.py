@@ -3,10 +3,18 @@ import sched
 import threading
 import time
 from pathlib import Path
-
 import requests
+import logging
+
+# Logger ===============================================================================================================
+logging.basicConfig(
+    filename="ping_patrol.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
 
 
+# WebSource class to keep sources and frequencies ======================================================================
 class WebSource:
     def __init__(self, url: str, frequency: int):
         self.url = url
@@ -16,6 +24,7 @@ class WebSource:
         return {"url": self.url, "frequency": self.frequency}
 
 
+# Scheduler class to manage the pinging of sources =====================================================================
 class WebSourceManager:
     SOURCES_FILE = Path("sources.json")
 
@@ -56,9 +65,9 @@ class WebSourceManager:
     def _ping(self, src: WebSource):
         try:
             r = requests.get(src.url, timeout=5)
-            print(f"{time.ctime()}: {src.url} -> {r.status_code}")
+            logging.info(f"{time.ctime()}: {src.url} -> {r.status_code}")
         except requests.RequestException as e:
-            print(f"{time.ctime()}: {src.url} error: {e}")
+            logging.error(f"{src.url} error: {e}")
 
     def _ping_and_reschedule(self, src: WebSource):
         threading.Thread(target=self._ping, args=(src,), daemon=True).start()
@@ -68,6 +77,7 @@ class WebSourceManager:
         if not self.sources:
             print("No sources to monitor. Please add some first.")
             return
+
         for src in self.sources:
             self._schedule_ping(src, immediate=True)
 
@@ -81,25 +91,62 @@ class WebSourceManager:
 
 
 # ----------- Main Program -----------
+def keyboard_inter_decor(func):
+    """
+    Decorator to handle keyboard interrupts gracefully.
+    """
 
-if __name__ == "__main__":
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except KeyboardInterrupt:
+            print("\nScript stopped by user.")
+            exit(0)
+
+    return wrapper
+
+
+@keyboard_inter_decor
+def main():
     manager = WebSourceManager()
 
+    log_file_path = Path("ping_patrol.log").resolve()
+    print(f"INFO: Press Ctrl+C to stop monitoring.\n"
+          f"INFO: Check {log_file_path} for monitoring details.\n")
+
     answer = input("Do you want to add sources? (y/n): ").strip().lower()
+
     if answer == "y":
         while True:
             url = input("Enter website URL: ").strip()
-            freq = int(input("Enter ping frequency (in seconds): ").strip())
+            # URL Validation
+            if not url.startswith("http://") and not url.startswith("https://"):
+                print("URL must start with 'http://' or 'https://'.")
+                continue
+            if not url:
+                print("URL cannot be empty.")
+                continue
+
+            # Frequency Validation
+            try:
+                freq = int(input("Enter ping frequency (in seconds): ").strip())
+            except ValueError:
+                print("Frequency must be a number.")
+                continue
 
             if freq <= 0:
                 print("Frequency must be a positive integer.")
                 continue
 
+            # Adding source
             manager.add_source(url, freq)
 
             cont = input("Add another? (y/n): ").strip().lower()
             if cont != "y":
                 break
-
     print("Starting monitor...")
     manager.run()
+
+
+if __name__ == "__main__":
+    main()
