@@ -3,6 +3,7 @@
 A lightweight Python tool for periodically pinging websites and monitoring their availability.  
 Designed for use on Windows-based VPS systems or local machines without relying on external schedulers like `cron` or `Task Scheduler`.
 
+---
 ## 🚀 Features
 
 - 🕓 Built-in scheduler (no need for external tools)
@@ -12,6 +13,7 @@ Designed for use on Windows-based VPS systems or local machines without relying 
 - 🪵 Simple log output with timestamps and HTTP status codes
 - ⚙️ Easily extensible and readable
 
+---
 ## 💻 Usage
 
 1. **Add sources**
@@ -58,6 +60,7 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
+---
 ## 📄 License
 
 MIT, Armen-Jean Andreasian 2025
