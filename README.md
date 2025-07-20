@@ -65,4 +65,4 @@ pip install -r requirements.txt
 ---
 ## 📄 License
 
-MIT, Armen-Jean Andreasian 2025
+Creative Commons Attribution Share Alike 4.0 International, Armen-Jean Andreasian 2025
