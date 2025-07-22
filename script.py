@@ -23,6 +23,18 @@ class WebSource:
     def to_dict(self):
         return {"url": self.url, "frequency": self.frequency}
 
+# Headers ==============================================================================================================
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/117.0.0.0 Safari/537.36"
+    ),
+    "Accept": (
+        "text/html,application/xhtml+xml,application/xml;"
+        "q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8"
+    )
+}
 
 # Scheduler class to manage the pinging of sources =====================================================================
 class WebSourceManager:
@@ -64,7 +76,7 @@ class WebSourceManager:
 
     def _ping(self, src: WebSource):
         try:
-            r = requests.get(src.url, timeout=5)
+            r = requests.get(src.url, timeout=5, headers=HEADERS)
             logging.info(f"{time.ctime()}: {src.url} -> {r.status_code}")
         except requests.RequestException as e:
             logging.error(f"{src.url} error: {e}")
