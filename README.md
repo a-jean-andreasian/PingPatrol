@@ -22,6 +22,16 @@ Designed for use on Windows-based VPS systems or local machines without relying 
 
 You will be prompted at runtime to enter the list of URLs to monitor. Alternatively, modify the script to load from a file or hardcode.
 
+JSON structure for sources:
+
+```json
+[
+  {"url": "https://example.com", "frequency": 10},
+  {"url": "https://example2.com", "frequency": 15}
+]
+```
+
+
 2. **Run the program**
 
 ```bash
