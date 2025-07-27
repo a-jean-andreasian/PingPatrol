@@ -2,8 +2,9 @@
 
 ---
 
-A lightweight Python tool for periodically pinging websites and monitoring their availability.  
-Designed for use on Windows-based VPS systems or local machines without relying on external schedulers like `cron` or `Task Scheduler`.
+The best tool whether to keep free-tier websites awake, or to ping websites for monitoring their health. 
+
+Works on all OS, including Windows, VPS systems or local machines without relying on external schedulers like `cron` or `Task Scheduler`.
 
 ---
 ## 🚀 Features
@@ -12,11 +13,13 @@ Designed for use on Windows-based VPS systems or local machines without relying 
 - 🌐 Periodically pings a list of websites
 - 🧵 Threaded execution - pings are run concurrently
 - 🧠 Smart rescheduling for stable uptime monitoring
-- 🪵 Simple log output with timestamps and HTTP status codes
+- 🪵  Simple log output with timestamps and HTTP status codes
 - ⚙️ Easily extensible and readable
+- 📧 Customizable daily, weekly, or custom frequency reporting logs to email
 
 ---
 ## 💻 Usage
+
 
 1. **Add sources**
 
