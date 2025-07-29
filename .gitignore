@@ -1,5 +1,6 @@
-/ping_patrol.log
+logs/
 .idea/
 .git/
 __pycache__/
 .env
+venv/

@@ -1,0 +1,2 @@
+RETRIES = 3
+TIMEOUT = 15
