@@ -4,13 +4,32 @@ import threading
 import time
 from pathlib import Path
 import requests
+import os
 import logging
+from src.services.reporter import TelegramReporter
+from src.helpers.load_env import load_env
+
+load_env(path='config/.env')
+
+# Constants ============================================================================================================
+LOG_DIR = "logs"
+LOG_FILE = os.path.join(LOG_DIR, "app.log")
+MAX_LOG_SIZE = 5 * 1024 * 1024  # 5 mb
+ROTATION_THRESHOLD = 0.9
 
 # Logger ===============================================================================================================
+os.makedirs(LOG_DIR, exist_ok=True)
+
 logging.basicConfig(
-    filename="ping_patrol.log",
+    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Reporter =============================================================================================================
+telegram_reporter = TelegramReporter(
+    token=os.environ.get('TOKEN'),
+    chat_id=os.environ.get('CHAT_ID')
 )
 
 
@@ -22,6 +41,7 @@ class WebSource:
 
     def to_dict(self):
         return {"url": self.url, "frequency": self.frequency}
+
 
 # Headers ==============================================================================================================
 HEADERS = {
@@ -36,14 +56,57 @@ HEADERS = {
     )
 }
 
+
+# Logging stuff ========================================================================================================
+class LoggingHandler:
+    def __init__(self):
+        self.last_report_time = 0
+        self.report_cooldown = 3600  # 1 hour cooldown between reports
+
+    def check_log_size(self):
+        """Check if log file size exceeds threshold"""
+        try:
+            log_size = Path(LOG_FILE).stat().st_size
+            current_time = time.time()
+
+            if log_size > MAX_LOG_SIZE * ROTATION_THRESHOLD:  # trigger at 90% of max size
+                if (current_time - self.last_report_time) > self.report_cooldown:
+                    self._rotate_log_file()
+                    self.last_report_time = current_time
+
+        except Exception as e:
+            logging.error(f"Error checking log size: {e}")
+
+    def _rotate_log_file(self):
+        """Rotate the log file when it gets too large, then empty the current log"""
+        try:
+            # Create rotated copy
+            rotated_name = f"{LOG_FILE}.{int(time.time())}"
+            Path(LOG_FILE).rename(rotated_name)
+
+            # Recreate empty log file
+            with open(LOG_FILE, 'w'):
+                pass
+
+            logging.info(f"Rotated log file to {rotated_name} and emptied current log")
+
+            # Send rotation notification
+            telegram_reporter.report(f"♻️ Log rotated: {rotated_name}\nCurrent log has been reset")
+
+        except Exception as e:
+            logging.error(f"Error rotating log file: {e}")
+            telegram_reporter.report(f"❌ Log rotation failed: {str(e)}")
+
+
 # Scheduler class to manage the pinging of sources =====================================================================
 class WebSourceManager:
-    SOURCES_FILE = Path("sources.json")
+    SOURCES_FILE = Path("config/sources.json")
 
     def __init__(self):
         self.scheduler = sched.scheduler(time.time, time.sleep)
         self.sources: list[WebSource] = []
         self._load_sources()
+        self.logging_handler = LoggingHandler()
 
     def _load_sources(self):
         if self.SOURCES_FILE.exists():
@@ -80,6 +143,9 @@ class WebSourceManager:
             logging.info(f"{time.ctime()}: {src.url} -> {r.status_code}")
         except requests.RequestException as e:
             logging.error(f"{src.url} error: {e}")
+
+        # Check log size after each ping
+        self.logging_handler.check_log_size()
 
     def _ping_and_reschedule(self, src: WebSource):
         threading.Thread(target=self._ping, args=(src,), daemon=True).start()
@@ -122,7 +188,7 @@ def keyboard_inter_decor(func):
 def main():
     manager = WebSourceManager()
 
-    log_file_path = Path("ping_patrol.log").resolve()
+    log_file_path = Path(LOG_FILE).resolve()
     print(f"INFO: Press Ctrl+C to stop monitoring.\n"
           f"INFO: Check {log_file_path} for monitoring details.\n")
 
